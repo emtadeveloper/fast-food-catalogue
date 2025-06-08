@@ -1,34 +1,61 @@
-export const UserInfo = ({ user }) => {
-  const { name, age, country, books } = user || {};
-  return user ? (
-    <>
-      <h2>{name}</h2>
-      <p>Age : {age} years</p>
-      <p>Country : {country}</p>
-      <h2>books</h2>
-      <ul>
-        {books.map((book) => (
-          <li key={book}>{book}</li>
-        ))}
-      </ul>
-    </>
-  ) : (
-    <h1>Loading ....</h1>
-  );
-};
+import { useEffect, useState } from "react";
+import mitt from "mitt";
 
-export const LogProps = (Component) => {
-  return (props) => {
-    return <Component {...props} />;
-  };
-};
+// در جاهای دیگه باید استفاده بکنیم
+export const emmiter = mitt();
 
-const UserInfoWrappper = LogProps(UserInfo);
-
-export default function App() {
+// کامپوننت جدا
+export const ParentComponent = () => {
   return (
     <>
-      <UserInfoWrappper test="test" b="I am b string" />
+      <Buttons />
+      <Counter />
     </>
   );
-}
+};
+
+// کامپوننت جدا
+export const Buttons = () => {
+  const onIncrementCounter = () => {
+    emmiter.emit("inc");
+  };
+  const onIDerementCounter = () => {
+    emmiter.emit("dec");
+  };
+
+  return (
+    <div>
+      <button onClick={onIncrementCounter}>+</button>
+      <button onClick={onIDerementCounter}>_</button>
+    </div>
+  );
+};
+
+// کامپوننت جدا
+export const Counter = () => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const onIncrement = () => {
+      setCount((count) => count + 1);
+    };
+    const onDecrement = () => {
+      setCount((count) => count - 1);
+    };
+    emmiter.on("inc", onIncrement);
+    emmiter.on("dec", onDecrement);
+
+    return () => {
+      emmiter.off("inc", onIncrement);
+      emmiter.off("dec", onDecrement);
+    };
+  }, []);
+
+  return <div># : {count}</div>;
+};
+
+const Test = (props) => {
+  return <ParentComponent />;
+};
+
+export default Test;
