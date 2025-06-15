@@ -1,61 +1,72 @@
-import { useEffect, useState } from "react";
-import mitt from "mitt";
+import { createContext, useContext, useReducer } from "react";
 
-// در جاهای دیگه باید استفاده بکنیم
-export const emmiter = mitt();
+function reducer(state, action) {
+  switch (action.type) {
+    case "INCREMENT":
+      return { count: state.count + 1 };
+    case "DECREMENT":
+      return { count: state.count - 1 };
+    default:
+      throw new Error("Provide a valid action .");
+  }
+}
 
-// کامپوننت جدا
-export const ParentComponent = () => {
-  return (
-    <>
-      <Buttons />
-      <Counter />
-    </>
-  );
+export const StateContext = createContext(null);
+
+export const DispatchContext = createContext(null);
+
+export function useStateContext() {
+  const value = useContext(StateContext);
+
+  if (value === null) {
+    throw new Error("Must be wrapped inside Context.provider");
+  }
+  return value;
+}
+
+export function useDispatchContext() {
+  const value = useContext(DispatchContext);
+
+  if (value === null) {
+    throw new Error("Must be wrapped inside Context.provider");
+  }
+  return value;
+}
+
+const Display = () => {
+  const state = useStateContext();
+  return <span className="span">{state.count}</span>;
 };
 
-// کامپوننت جدا
-export const Buttons = () => {
-  const onIncrementCounter = () => {
-    emmiter.emit("inc");
-  };
-  const onIDerementCounter = () => {
-    emmiter.emit("dec");
-  };
-
+const Buttons = () => {
+  const dispatch = useDispatchContext();
   return (
-    <div>
-      <button onClick={onIncrementCounter}>+</button>
-      <button onClick={onIDerementCounter}>_</button>
+    <div className="buttons">
+      <button className="button" onClick={() => dispatch({ type: "DECREMENT" })}>
+        -
+      </button>
+      <button className="button" onClick={() => dispatch({ type: "INCREMENT" })}>
+        +
+      </button>
     </div>
   );
 };
 
-// کامپوننت جدا
-export const Counter = () => {
-  const [count, setCount] = useState(0);
+export const CartProvider = ({ children }) => {
+  const [state, disptach] = useReducer(reducer, { count: 0 });
 
-  useEffect(() => {
-    const onIncrement = () => {
-      setCount((count) => count + 1);
-    };
-    const onDecrement = () => {
-      setCount((count) => count - 1);
-    };
-    emmiter.on("inc", onIncrement);
-    emmiter.on("dec", onDecrement);
-
-    return () => {
-      emmiter.off("inc", onIncrement);
-      emmiter.off("dec", onDecrement);
-    };
-  }, []);
-
-  return <div># : {count}</div>;
+  return (
+    <DispatchContext.Provider value={disptach}>
+      <StateContext.Provider value={state}>{children}</StateContext.Provider>
+    </DispatchContext.Provider>
+  );
 };
 
-const Test = (props) => {
-  return <ParentComponent />;
-};
-
-export default Test;
+export default function App() {
+  return (
+    <CartProvider>
+      <Display />
+      <Buttons />
+    </CartProvider>
+  );
+}
